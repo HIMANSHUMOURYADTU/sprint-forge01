@@ -1,22 +1,9 @@
-#!/usr/bin/env python3
-"""
-run.py - headless runner for the Link Intel Suite (also the grader's entry point).
 
-Runs the full internal-linking analysis on a Screaming Frog export with no Claude Code:
-  load -> graph -> anchors -> topics -> entities (TF proxy) -> recommend (candidates)
-       -> write report.json + report.html
+from __future__ import annotations
 
-Usage:
-  python run.py sample-export/
-  python run.py sample-export/ --no-dashboard
-
-The model-driven steps (cluster naming, entity extraction, writing the contextual link
-anchors) are left as build TODOs; the starter writes deterministic placeholders so the
-report.json contract stays valid and the pipeline always produces a graded artifact.
-"""
+import os
 from reporting.pdf_report import generate_pdf_report
 from reporting.ppt_report import generate_ppt_report
-from __future__ import annotations
 import argparse, os, sys, time
 
 HERE = os.path.dirname(os.path.abspath(__file__))
