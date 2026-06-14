@@ -14,6 +14,8 @@ The model-driven steps (cluster naming, entity extraction, writing the contextua
 anchors) are left as build TODOs; the starter writes deterministic placeholders so the
 report.json contract stays valid and the pipeline always produces a graded artifact.
 """
+from reporting.pdf_report import generate_pdf_report
+from reporting.ppt_report import generate_ppt_report
 from __future__ import annotations
 import argparse, os, sys, time
 
@@ -46,6 +48,24 @@ def main():
     server.RUN["duration_sec"] = round(time.time() - t0, 1)
     server.li_report()
     server.li_export()
+    try:
+        report_data = server.RUN
+
+        generate_pdf_report(
+            report_data,
+            os.path.join(HERE, "outputs", "report.pdf")
+        )
+
+        generate_ppt_report(
+            report_data,
+            os.path.join(HERE, "outputs", "report.pptx")
+        )
+
+        print("Wrote outputs/report.pdf")
+        print("Wrote outputs/report.pptx")
+
+    except Exception as e:
+        print(f"[WARN] Report generation failed: {e}")
 
     s = server.RUN["summary"]
     print("\n=== INTERNAL LINKING INTELLIGENCE ===")
