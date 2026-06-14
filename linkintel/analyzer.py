@@ -291,15 +291,17 @@ def cluster_pages(pages, page_text, n_keywords=12) -> dict:
         ck = Counter()
         for m in members:
             ck.update(kw.get(m, []))
+        cluster_kws = [w for w, _ in ck.most_common(8)]
+        name = " ".join([w.title() for w in cluster_kws[:2]]) if cluster_kws else "General Topic"
         out.append({
             "key": f"cluster_{label}",
-            "name": None,
+            "name": name,
             "size": len(members),
             "pages": members,
             "hub_page": hub,
             "hub_inlinks": hub_inlinks,
             "authority": "hub" if clear_hub else "scattered",
-            "keywords": [w for w, _ in ck.most_common(8)],
+            "keywords": cluster_kws,
         })
     return {"clusters": out, "page_keywords": kw, "embeddings": embeddings_dict}
 
