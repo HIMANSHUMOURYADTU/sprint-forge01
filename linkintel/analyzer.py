@@ -201,8 +201,9 @@ def graph_stats(pages, inlinks, graph) -> dict:
     under_linked = sorted([u for u, n in inl.items() if n <= UNDER])
     vals = sorted(inl.values())
     over_thresh = vals[int(len(vals) * 0.95)] if vals else 0
-    over_linked = sorted([u for u, n in inl.items() if n >= max(over_thresh, 1) and n == max(vals or [0])][:0]) \
-        or sorted([u for u, n in inl.items() if over_thresh and n >= over_thresh])
+    over_linked = sorted(
+        [u for u, n in inl.items() if over_thresh and n >= over_thresh]
+    )
     broken, redir, nofollow = [], [], []
     for r in inlinks:
         sc = _int(r.get("Status Code"))
@@ -335,7 +336,7 @@ def link_candidates(graph, relate, pages, clusters, max_per_page=5) -> list:
     for c in clusters.get("clusters", []):
         for p in c["pages"]:
             page_to_cluster[p] = c["key"]
-    LOW_VALUE_PATTERNS = ["/author/", "/tag/", "/page/", "/archive/", "/category/"]
+    LOW_VALUE_PATTERNS = ["/author/", "/tag/", "/page/", "/archive/", "/category/", "/search/", "/feed/"]
     HIGH_VALUE_PATTERNS = ["/services/", "/solutions/", "/case-studies/", "/guides/", "/resources/", "/industry/"]
     important = sorted(inl, key=lambda u: -inl[u])[:40]
     out = []
@@ -351,15 +352,16 @@ def link_candidates(graph, relate, pages, clusters, max_per_page=5) -> list:
             same_cluster = 1.0 if u_cluster and page_to_cluster.get(v) == u_cluster else 0.0
             underlinked = 1.0 if inl.get(v, 0) <= 1 else 0.0
             orphan = 1.0 if inl.get(v, 0) == 0 else 0.0
+            if any(pat in v.lower() for pat in LOW_VALUE_PATTERNS):
+                continue
+
             high_value = 1.0 if any(pat in v.lower() for pat in HIGH_VALUE_PATTERNS) else 0.0
-            low_value = 1.0 if any(pat in v.lower() for pat in LOW_VALUE_PATTERNS) else 0.0
             final_score = (
                 0.45 * sem_score +
                 0.20 * same_cluster +
                 0.15 * underlinked +
                 0.10 * orphan +
-                0.15 * high_value -
-                0.40 * low_value
+                0.15 * high_value
             )
             scored_candidates.append({
                 "target": v,

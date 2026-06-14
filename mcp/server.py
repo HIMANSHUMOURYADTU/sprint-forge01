@@ -16,6 +16,13 @@ from __future__ import annotations
 import json, os, queue, threading, time
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import urlparse
+from reportlab.lib.pagesizes import LETTER
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from reportlab.lib import colors
+from pptx import Presentation
+from pptx.util import Inches, Pt
+
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
@@ -201,8 +208,141 @@ def li_export() -> dict:
     open(p, "w", encoding="utf-8").write(_render_html(_report_obj()))
     _emit("exported", {"path": p}); return {"path": p}
 
+def li_export_pdf() -> dict:
+    os.makedirs(OUT_DIR, exist_ok=True)
+    p = _render_pdf(_report_obj())
+    _emit("exported", {"path": p}); return {"path": p}
+
+def li_export_pptx() -> dict:
+    os.makedirs(OUT_DIR, exist_ok=True)
+    p = _render_pptx(_report_obj())
+    _emit("exported", {"path": p}); return {"path": p}
+
+
+def _render_pdf(o) -> str:
+    """Generates a professional PDF report from the analysis object."""
+    p = os.path.join(OUT_DIR, "report.pdf")
+    doc = SimpleDocTemplate(p, pagesize=LETTER)
+    styles = getSampleStyleSheet()
+
+    title_style = ParagraphStyle('TitleStyle', parent=styles['Heading1'], alignment=1, spaceAfter=12)
+    header_style = ParagraphStyle('HeaderStyle', parent=styles['Heading2'], spaceBefore=12, spaceAfter=6)
+    body_style = styles['BodyText']
+
+    elements = []
+    elements.append(Paragraph(f"Internal Linking Intelligence: {o['site']}", title_style))
+    elements.append(Spacer(1, 12))
+    elements.append(Paragraph("Executive Summary", header_style))
+    s = o['summary']
+    summary_data = [
+        ["Pages Crawled", s['pages_crawled']],
+        ["Indexable Pages", s['indexable_pages']],
+        ["Internal Links", s['internal_links']],
+        ["Orphan Pages", s['orphan_pages']],
+        ["Broken Links", s['broken_internal_links']],
+        ["Generic Anchors", s['generic_anchors']],
+        ["Topical Clusters", s['topical_clusters']],
+        ["Recommendations", s['link_recommendations']],
+    ]
+    t = Table(summary_data, colWidths=[200, 100])
+    t.setStyle(TableStyle([('GRID', (0,0), (-1,-1), 0.5, colors.grey), ('BACKGROUND', (0,0), (0,-1), colors.whitesmoke)]))
+    elements.append(t)
+
+    elements.append(Paragraph("Graph Analysis", header_style))
+    g = o['link_graph']
+    graph_data = [
+        ["Max Crawl Depth", g['max_crawl_depth']],
+        ["Avg Inlinks", g['avg_inlinks']],
+        ["Under-linked Pages", len(g['under_linked_pages'])],
+        ["Over-linked Pages", len(g['over_linked_pages'])],
+    ]
+    t_graph = Table(graph_data, colWidths=[200, 100])
+    t_graph.setStyle(TableStyle([('GRID', (0,0), (-1,-1), 0.5, colors.grey)]))
+    elements.append(t_graph)
+
+    elements.append(Paragraph("Anchor Text Audit", header_style))
+    a = o['anchor_text']
+    anchor_data = [
+        ["Total Internal Anchors", a['total_internal_anchors']],
+        ["Generic / Non-descriptive", len(a['generic_anchors'])],
+        ["Empty / Image Only", len(a['empty_or_image_only'])],
+        ["Over-optimized Exact Match", len(a['over_optimized_anchors'])],
+    ]
+    t_anchor = Table(anchor_data, colWidths=[200, 100])
+    t_anchor.setStyle(TableStyle([('GRID', (0,0), (-1,-1), 0.5, colors.grey)]))
+    elements.append(t_anchor)
+
+    elements.append(Paragraph("Topical Clusters", header_style))
+    cluster_data = [["Cluster Name", "Size", "Authority"]]
+    for c in o['topical_clusters'][:15]:
+        cluster_data.append([c['name'] or c['key'], c['size'], c['authority']])
+    t_cluster = Table(cluster_data, colWidths=[300, 80, 100])
+    t_cluster.setStyle(TableStyle([('BACKGROUND', (0,0), (-1,0), colors.grey), ('TEXTCOLOR', (0,0), (-1,0), colors.whitesmoke), ('GRID', (0,0), (-1,-1), 0.5, colors.grey)]))
+    elements.append(t_cluster)
+
+    elements.append(Paragraph("Contextual Recommendations", header_style))
+    rec_data = [["Source", "Target", "Suggested Anchor"]]
+    for r in o['link_recommendations'][:20]:
+        rec_data.append([r['source'].replace("https://",""), r['target'].replace("https://",""), r.get('suggested_anchor') or "N/A"])
+    t_rec = Table(rec_data, colWidths=[200, 200, 200])
+    t_rec.setStyle(TableStyle([('BACKGROUND', (0,0), (-1,0), colors.grey), ('TEXTCOLOR', (0,0), (-1,0), colors.whitesmoke), ('GRID', (0,0), (-1,-1), 0.5, colors.grey)]))
+    elements.append(t_rec)
+
+    elements.append(Spacer(1, 24))
+    elements.append(Paragraph("Conclusion: The site exhibits a topical authority of " +
+                             ("Strong" if len(o['topical_clusters']) > 0 else "Undefined") +
+                             ". Focus on resolving orphan pages and replacing generic anchors to improve semantic flow.", body_style))
+
+    doc.build(elements)
+    return p
+
+def _render_pptx(o) -> str:
+    """Generates a professional presentation report from the analysis object."""
+    p = os.path.join(OUT_DIR, "report.pptx")
+    prs = Presentation()
+
+    def add_slide(title, content_type="text", data=None):
+        slide = prs.slides.add_slide(prs.slide_layouts[1])
+        slide.shapes.title.text = title
+        return slide
+
+    title_slide = prs.slides.add_slide(prs.slide_layouts[0])
+    title_slide.shapes.title.text = "Internal Linking Intelligence"
+    title_slide.placeholders[1].text = f"Analysis for {o['site']}\nGenerated by Link Intel Suite"
+
+    s2 = add_slide("Executive Summary")
+    s = o['summary']
+    body = f"• Pages Crawled: {s['pages_crawled']}\n• Internal Links: {s['internal_links']}\n• Orphan Pages: {s['orphan_pages']}\n• Topical Clusters: {s['topical_clusters']}\n• Recommendations: {s['link_recommendations']}"
+    s2.placeholders[1].text = body
+
+    s3 = add_slide("Graph Analysis")
+    g = o['link_graph']
+    body_g = f"• Max Depth: {g['max_crawl_depth']}\n• Avg Inlinks: {g['avg_inlinks']}\n• Broken Internal Links: {len(g['broken_internal_links'])}\n• Deepest Pages: {len(g['deepest_pages'])}"
+    s3.placeholders[1].text = body_g
+
+    s4 = add_slide("Anchor Analysis")
+    a = o['anchor_text']
+    body_a = f"• Total Anchors: {a['total_internal_anchors']}\n• Generic Anchors: {len(a['generic_anchors'])}\n• Empty/Image-Only: {len(a['empty_or_image_only'])}\n• Over-optimized: {len(a['over_optimized_anchors'])}"
+    s4.placeholders[1].text = body_a
+
+    s5 = add_slide("Topical Clusters")
+    clusters = o['topical_clusters']
+    body_c = "\n".join([f"• {c['name'] or c['key']} ({c['size']} pages) - {c['authority']}" for c in clusters[:6]])
+    s5.placeholders[1].text = body_c or "No clusters identified."
+
+    s6 = add_slide("Top Recommendations")
+    recs = o['link_recommendations'][:5]
+    body_r = "\n".join([f"• {r['target'].replace('https://','')}\n  Anchor: {r.get('suggested_anchor')}" for r in recs])
+    s6.placeholders[1].text = body_r or "No high-priority recommendations."
+
+    s7 = add_slide("Conclusion")
+    s7.placeholders[1].text = "Strategic focus should be placed on improving internal link equity flow from hubs to under-linked high-value pages and remediating generic anchor text to strengthen topical authority."
+
+    prs.save(p)
+    return p
 
 def _render_html(o) -> str:
+
     s = o["summary"]; g = o["link_graph"]
     cl_rows = "".join(
         f'<tr><td>{c.get("name") or c["key"]}</td><td>{c["size"]}</td>'
@@ -328,6 +468,16 @@ def _run_mcp():
     def export_report() -> dict:
         """Write outputs/report.html (the client deliverable)."""
         return li_export()
+
+    @mcp.tool()
+    def export_pdf() -> dict:
+        """Export a professional PDF version of the report."""
+        return li_export_pdf()
+
+    @mcp.tool()
+    def export_pptx() -> dict:
+        """Export a professional PowerPoint presentation of the report."""
+        return li_export_pptx()
 
     mcp.run()
 
