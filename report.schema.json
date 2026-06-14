@@ -1,0 +1,130 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Forge 1 (Edition 2) - Internal Linking Intelligence report.json contract",
+  "type": "object",
+  "required": ["site", "pages_crawled", "summary", "link_graph", "anchor_text", "topical_clusters", "entity_graph", "link_recommendations", "run_meta"],
+  "properties": {
+    "site": { "type": "string" },
+    "pages_crawled": { "type": "integer" },
+    "summary": {
+      "type": "object",
+      "required": ["pages_crawled", "indexable_pages", "internal_links", "orphan_pages", "broken_internal_links", "generic_anchors", "topical_clusters", "link_recommendations"],
+      "properties": {
+        "pages_crawled": { "type": "integer" },
+        "indexable_pages": { "type": "integer" },
+        "internal_links": { "type": "integer" },
+        "orphan_pages": { "type": "integer" },
+        "broken_internal_links": { "type": "integer" },
+        "generic_anchors": { "type": "integer" },
+        "topical_clusters": { "type": "integer" },
+        "link_recommendations": { "type": "integer" }
+      }
+    },
+    "link_graph": {
+      "type": "object",
+      "required": ["internal_links", "max_crawl_depth", "orphan_pages", "deepest_pages", "broken_internal_links"],
+      "properties": {
+        "internal_links": { "type": "integer" },
+        "max_crawl_depth": { "type": "integer" },
+        "avg_inlinks": { "type": "number" },
+        "orphan_pages": { "type": "array", "items": { "type": "string" } },
+        "deepest_pages": { "type": "array", "items": { "type": "string" } },
+        "under_linked_pages": { "type": "array", "items": { "type": "string" } },
+        "over_linked_pages": { "type": "array", "items": { "type": "string" } },
+        "broken_internal_links": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["source", "destination", "status"],
+            "properties": {
+              "source": { "type": "string" },
+              "destination": { "type": "string" },
+              "status": { "type": "integer" },
+              "anchor": { "type": "string" }
+            }
+          }
+        },
+        "redirect_internal_links": { "type": "array", "items": { "type": "object" } },
+        "nofollow_internal_links": { "type": "array", "items": { "type": "object" } }
+      }
+    },
+    "anchor_text": {
+      "type": "object",
+      "required": ["total_internal_anchors", "generic_anchors", "empty_or_image_only", "over_optimized_anchors"],
+      "properties": {
+        "total_internal_anchors": { "type": "integer" },
+        "generic_anchors": { "type": "array", "items": { "type": "object" } },
+        "empty_or_image_only": { "type": "array", "items": { "type": "object" } },
+        "over_optimized_anchors": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["destination", "anchor", "count"],
+            "properties": {
+              "destination": { "type": "string" },
+              "anchor": { "type": "string" },
+              "count": { "type": "integer" },
+              "share": { "type": "number" }
+            }
+          }
+        }
+      }
+    },
+    "topical_clusters": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["key", "size", "pages", "authority"],
+        "properties": {
+          "key": { "type": "string" },
+          "name": { "type": ["string", "null"] },
+          "size": { "type": "integer" },
+          "pages": { "type": "array", "items": { "type": "string" } },
+          "hub_page": { "type": ["string", "null"] },
+          "hub_inlinks": { "type": "integer" },
+          "authority": { "type": "string", "enum": ["hub", "scattered"] },
+          "keywords": { "type": "array", "items": { "type": "string" } }
+        }
+      }
+    },
+    "entity_graph": {
+      "type": "object",
+      "description": "page URL -> ranked list of {to, score, shared} related pages",
+      "additionalProperties": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "required": ["to", "score"],
+          "properties": {
+            "to": { "type": "string" },
+            "score": { "type": "number" },
+            "shared": { "type": "array", "items": { "type": "string" } }
+          }
+        }
+      }
+    },
+    "link_recommendations": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["source", "target", "suggested_anchor"],
+        "properties": {
+          "source": { "type": "string" },
+          "target": { "type": "string" },
+          "suggested_anchor": { "type": ["string", "null"] },
+          "relatedness": { "type": "number" },
+          "reason": { "type": "string" }
+        }
+      }
+    },
+    "run_meta": {
+      "type": "object",
+      "required": ["model_calls"],
+      "properties": {
+        "model": { "type": "string" },
+        "model_calls": { "type": "integer" },
+        "duration_sec": { "type": "number" }
+      }
+    }
+  }
+}

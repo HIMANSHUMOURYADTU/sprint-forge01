@@ -1,0 +1,22 @@
+{
+  "name": "link-intel-suite",
+  "version": "0.1.0",
+  "description": "Forge 1 (Edition 2) starter. Ingests a Screaming Frog export and produces an internal-linking + topical-authority analysis: link graph, anchor-text issues, topical clusters, an entity graph, and contextual internal-link recommendations. Live dashboard + report.json + report.html.",
+  "author": "NMG Labs - Forge 1 (Edition 2)",
+  "license": "MIT",
+  "skills": ["./skills/link-intel"],
+  "commands": ["./commands/link-intel.md"],
+  "agents": [
+    "./agents/graph-agent.md",
+    "./agents/anchor-agent.md",
+    "./agents/topic-agent.md",
+    "./agents/linker-agent.md",
+    "./agents/reporter.md"
+  ],
+  "mcpServers": {
+    "link-intel-suite": {
+      "command": "python",
+      "args": ["${CLAUDE_PLUGIN_ROOT}/mcp/server.py"]
+    }
+  }
+}

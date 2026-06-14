@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Link Intel Suite - live cockpit</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet" />
+<style>
+:root{--ink:#1a1a1f;--card:#242428;--line:#3a3a42;--paper:#f8f7f4;--mute:#c8c5be;--red:#FF0000;--blue:#6ea8fe;--green:#22c55e;--amber:#e2b53e}
+*{box-sizing:border-box}
+body{margin:0;background:var(--ink);color:var(--paper);font-family:Inter,system-ui,sans-serif;line-height:1.5}
+.bar{height:3px;background:var(--red);position:fixed;top:0;left:0;right:0;z-index:10}
+.wrap{max-width:1080px;margin:0 auto;padding:34px 22px}
+h1{font-size:24px;margin:0 0 2px}
+.sub{color:var(--mute);font-size:14px;margin-bottom:6px}
+.mono{font-family:'JetBrains Mono',monospace}
+.dot{display:inline-block;width:9px;height:9px;border-radius:50%;background:var(--red);margin-right:8px;box-shadow:0 0 12px rgba(255,0,0,.6);animation:p 2.2s ease-in-out infinite}
+@keyframes p{0%,100%{opacity:1}50%{opacity:.5}}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin:18px 0}
+.kpi{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px}
+.kpi b{display:block;font-size:30px;line-height:1.1}
+.kpi span{font-size:12px;color:var(--mute);text-transform:uppercase;letter-spacing:.07em}
+.cols{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media(max-width:760px){.cols{grid-template-columns:1fr}}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:18px;margin-bottom:16px}
+.card h3{margin:0 0 12px;font-size:15px}
+.row{display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--line);font-size:13.5px}
+.row:last-child{border:none}
+.row .v{font-family:'JetBrains Mono',monospace;color:var(--blue)}
+.tag{font-size:11px;font-weight:700;padding:2px 8px;border-radius:999px}
+.tag.hub{background:var(--green);color:#04210f}.tag.scattered{background:var(--line);color:var(--mute)}
+.cl{display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid var(--line);font-size:13px}
+.cl:last-child{border:none}
+.feed{font-family:'JetBrains Mono',monospace;font-size:11.5px;color:var(--mute);max-height:200px;overflow:auto}
+.feed div{padding:3px 0;border-bottom:1px dashed #2c2c32}
+.st{font-size:12px;color:var(--mute)}
+.rec{font-size:12.5px;padding:8px 0;border-bottom:1px solid var(--line)}
+.rec:last-child{border:none}.rec .a{color:var(--paper);font-weight:600}
+.empty{color:var(--mute);font-size:13px}
+</style>
+</head>
+<body>
+<div class="bar"></div>
+<div class="wrap">
+  <h1><span class="dot"></span>Link Intel Suite</h1>
+  <div class="sub"><span id="site" class="mono">waiting for a run...</span> · <span id="status" class="st">idle</span></div>
+
+  <div class="grid">
+    <div class="kpi"><b id="k-links">-</b><span>internal links</span></div>
+    <div class="kpi"><b id="k-orphans" style="color:var(--amber)">-</b><span>orphan pages</span></div>
+    <div class="kpi"><b id="k-broken" style="color:var(--red)">-</b><span>broken internal</span></div>
+    <div class="kpi"><b id="k-generic">-</b><span>generic anchors</span></div>
+    <div class="kpi"><b id="k-clusters">-</b><span>clusters</span></div>
+    <div class="kpi"><b id="k-recs" style="color:var(--blue)">-</b><span>link suggestions</span></div>
+  </div>
+
+  <div class="cols">
+    <div class="card"><h3>Internal link graph</h3>
+      <div class="row"><span>Pages crawled</span><span class="v" id="g-pages">-</span></div>
+      <div class="row"><span>Indexable pages</span><span class="v" id="g-idx">-</span></div>
+      <div class="row"><span>Max crawl depth</span><span class="v" id="g-depth">-</span></div>
+      <div class="row"><span>Avg inlinks/page</span><span class="v" id="g-avg">-</span></div>
+      <div class="row"><span>Deepest pages</span><span class="v" id="g-deep">-</span></div>
+      <div class="row"><span>Under-linked</span><span class="v" id="g-under">-</span></div>
+      <div class="row"><span>Over-linked</span><span class="v" id="g-over">-</span></div>
+      <div class="row"><span>Redirect internal links</span><span class="v" id="g-redir">-</span></div>
+      <div class="row"><span>Nofollow internal links</span><span class="v" id="g-nofol">-</span></div>
+    </div>
+    <div class="card"><h3>Anchor text</h3>
+      <div class="row"><span>Total internal anchors</span><span class="v" id="a-total">-</span></div>
+      <div class="row"><span>Generic / non-descriptive</span><span class="v" id="a-generic">-</span></div>
+      <div class="row"><span>Empty / image-only</span><span class="v" id="a-empty">-</span></div>
+      <div class="row"><span>Over-optimized exact-match</span><span class="v" id="a-over">-</span></div>
+      <h3 style="margin-top:16px">Entities</h3>
+      <div class="row"><span>Pages with entities</span><span class="v" id="e-pages">-</span></div>
+    </div>
+  </div>
+
+  <div class="card"><h3>Topical clusters &amp; authority</h3>
+    <div id="clusters"><div class="empty">No clusters yet.</div></div>
+  </div>
+
+  <div class="card"><h3>Contextual link recommendations</h3>
+    <div id="recs"><div class="empty">No recommendations yet.</div></div>
+  </div>
+
+  <div class="card"><h3>Live event feed</h3><div class="feed" id="feed"></div></div>
+</div>
+<script src="/app.js"></script>
+</body>
+</html>
